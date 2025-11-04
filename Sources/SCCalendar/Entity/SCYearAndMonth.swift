@@ -15,4 +15,10 @@ public struct SCYearAndMonth: Identifiable, Sendable {
     public var yearAndMonth: String {
         "\(year)年\(month)月"
     }
+    
+    public init(year: Int, month: Int, dates: [SCDate]) {
+        self.year = year
+        self.month = month
+        self.dates = dates
+    }
 }
