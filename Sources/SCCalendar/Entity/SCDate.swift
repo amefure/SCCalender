@@ -19,7 +19,17 @@ public struct SCDate: Identifiable, @unchecked Sendable {
     public var isToday: Bool = false
     
     
-    public init(id: UUID, year: Int, month: Int, day: Int, date: Date? = nil, week: SCWeek? = nil, holidayName: String, entities: [SCDateEntity], isToday: Bool) {
+    public init(
+        id: UUID = UUID(),
+        year: Int,
+        month: Int,
+        day: Int,
+        date: Date? = nil,
+        week: SCWeek? = nil,
+        holidayName: String = "",
+        entities: [SCDateEntity] = [],
+        isToday: Bool
+    ) {
         self.id = id
         self.year = year
         self.month = month
