@@ -17,6 +17,19 @@ public struct SCDate: Identifiable, @unchecked Sendable {
     /// 日付に持たせたいエンティティ
     public var entities: [SCDateEntity] = []
     public var isToday: Bool = false
+    
+    
+    public init(id: UUID, year: Int, month: Int, day: Int, date: Date? = nil, week: SCWeek? = nil, holidayName: String, entities: [SCDateEntity], isToday: Bool) {
+        self.id = id
+        self.year = year
+        self.month = month
+        self.day = day
+        self.date = date
+        self.week = week
+        self.holidayName = holidayName
+        self.entities = entities
+        self.isToday = isToday
+    }
 
     public func dayColor(defaultColor: Color = .gray) -> Color {
         guard let week else { return defaultColor }
