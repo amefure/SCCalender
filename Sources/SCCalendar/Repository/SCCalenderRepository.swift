@@ -51,7 +51,7 @@ public final class SCCalenderRepository: @unchecked Sendable {
     
     private let df = DateFormatUtility()
 
-    init() {
+    public init() {
         today = calendar.dateComponents([.year, .month, .day], from: Date())
     }
 
