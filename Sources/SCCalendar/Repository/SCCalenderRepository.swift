@@ -9,8 +9,8 @@ import SwiftUI
 
 public final class SCCalenderRepository: @unchecked Sendable {
     /// 初期表示位置デモ値
-    private static let START_YEAR = 2023
-    private static let START_MONTH = 1
+    public static let START_YEAR = 2023
+    public static let START_MONTH = 1
     ///  カレンダーの週行数を`42(7行)`に固定する
     private static let WEEK_ROW_COUNT = 42
     /// 最初に表示したい曜日
@@ -20,21 +20,21 @@ public final class SCCalenderRepository: @unchecked Sendable {
     ///  `[2024.2 , 2024.3 , 2024.4]`
     /// `forwardMonth / backMonth`を実行するたびに追加されていく
     /// 初期表示時点は
-    var yearAndMonths: AnyPublisher<[SCYearAndMonth], Never> {
+    public var yearAndMonths: AnyPublisher<[SCYearAndMonth], Never> {
         _yearAndMonths.eraseToAnyPublisher()
     }
 
     private let _yearAndMonths = CurrentValueSubject<[SCYearAndMonth], Never>([])
 
     /// 表示している曜日配列(順番はUIに反映される)
-    var dayOfWeekList: AnyPublisher<[SCWeek], Never> {
+    public var dayOfWeekList: AnyPublisher<[SCWeek], Never> {
         _dayOfWeekList.eraseToAnyPublisher()
     }
 
     private let _dayOfWeekList = CurrentValueSubject<[SCWeek], Never>(SCWeek.INITAL_LIST)
 
     /// アプリに表示中の年月インデックス
-    var displayCalendarIndex: AnyPublisher<Int, Never> {
+    public var displayCalendarIndex: AnyPublisher<Int, Never> {
         _displayCalendarIndex.eraseToAnyPublisher()
     }
 
@@ -48,21 +48,22 @@ public final class SCCalenderRepository: @unchecked Sendable {
 
     /// 日付に紐付ける情報
     private var allEntities: [SCDateEntity] = []
+    
+    private let df = DateFormatUtility()
 
     init() {
         today = calendar.dateComponents([.year, .month, .day], from: Date())
     }
 
     /// 初期表示用に当月の年月だけセットして流す
-    func fetchInitYearAndMonths() -> [SCYearAndMonth] {
-        let df = DateFormatUtility()
+    public func fetchInitYearAndMonths() -> [SCYearAndMonth] {
         // 初回描画用に最新月だけ取得して表示する
         let today = Calendar(identifier: .gregorian).dateComponents([.year, .month, .day], from: Date())
-        let yearAndMonth: SCYearAndMonth = createYearAndMonth(year: today.year ?? 1, month: today.month ?? 1, df: df)
+        let yearAndMonth: SCYearAndMonth = createYearAndMonth(year: today.year ?? 1, month: today.month ?? 1)
         return [yearAndMonth]
     }
 
-    func initialize(
+    public func initialize(
         startYear: Int = START_YEAR,
         startMonth: Int = START_MONTH,
         initWeek: SCWeek = .sunday,
@@ -91,8 +92,7 @@ public extension SCCalenderRepository {
     ///   - month: 中央となる指定月
     ///   - range: 中央を基準に前後に含める月数（例: range = 1なら前後1ヶ月ずつ）
     private func initialSetUpCalendarData(year: Int, month: Int, range: Int = 5) {
-        let df = DateFormatUtility()
-        let middle = createYearAndMonth(year: year, month: month, df: df)
+        let middle = createYearAndMonth(year: year, month: month)
         var yearAndMonths: [SCYearAndMonth] = []
 
         let dateComponents = DateComponents(year: middle.year, month: middle.month)
@@ -103,7 +103,7 @@ public extension SCCalenderRepository {
             let components = calendar.dateComponents([.year, .month], from: targetDate)
             guard let y = components.year,
                   let m = components.month else { continue }
-            let yearAndMonth = createYearAndMonth(year: y, month: m, df: df)
+            let yearAndMonth = createYearAndMonth(year: y, month: m)
             yearAndMonths.append(yearAndMonth)
         }
 
@@ -125,8 +125,7 @@ public extension SCCalenderRepository {
     /// 1ヶ月単位の`SCYearAndMonth`インスタンスを作成
     func createYearAndMonth(
         year: Int,
-        month: Int,
-        df: DateFormatUtility
+        month: Int
     ) -> SCYearAndMonth {
         // 指定された年月の最初の日を取得
         var components = DateComponents()
@@ -238,12 +237,11 @@ public extension SCCalenderRepository {
     private func addNextMonth() -> Bool {
         var yearAndMonths = _yearAndMonths.value
         guard let last = yearAndMonths.last else { return false }
-        let df = DateFormatUtility()
         if last.month + 1 == 13 {
-            let yearAndMonth = createYearAndMonth(year: last.year + 1, month: 1, df: df)
+            let yearAndMonth = createYearAndMonth(year: last.year + 1, month: 1)
             yearAndMonths.append(yearAndMonth)
         } else {
-            let yearAndMonth = createYearAndMonth(year: last.year, month: last.month + 1, df: df)
+            let yearAndMonth = createYearAndMonth(year: last.year, month: last.month + 1)
             yearAndMonths.append(yearAndMonth)
         }
         updateCalendar(yearAndMonths: yearAndMonths)
@@ -254,15 +252,14 @@ public extension SCCalenderRepository {
     /// - Returns: 成功フラグ
     private func addPreMonth() -> Bool {
         var yearAndMonths = _yearAndMonths.value
-        let df = DateFormatUtility()
         // 12ヶ月分一気に追加する
         for _ in 1 ..< 12 {
             guard let first = yearAndMonths.first else { return false }
             if first.month - 1 == 0 {
-                let yearAndMonth = createYearAndMonth(year: first.year - 1, month: 12, df: df)
+                let yearAndMonth = createYearAndMonth(year: first.year - 1, month: 12)
                 yearAndMonths.insert(yearAndMonth, at: 0)
             } else {
-                let yearAndMonth = createYearAndMonth(year: first.year, month: first.month - 1, df: df)
+                let yearAndMonth = createYearAndMonth(year: first.year, month: first.month - 1)
                 yearAndMonths.insert(yearAndMonth, at: 0)
             }
         }
@@ -279,12 +276,10 @@ public extension SCCalenderRepository {
         _dayOfWeekList.send(list)
         let oldYearAndMonths = _yearAndMonths.value
 
-        let df = DateFormatUtility()
-
         // 週始まりが変更されたため中身すべて入れ替える
         var newYearAndMonths: [SCYearAndMonth] = []
         for yearAndMonth in oldYearAndMonths {
-            let yearAndMonths: SCYearAndMonth = createYearAndMonth(year: yearAndMonth.year, month: yearAndMonth.month, df: df)
+            let yearAndMonths: SCYearAndMonth = createYearAndMonth(year: yearAndMonth.year, month: yearAndMonth.month)
             newYearAndMonths.append(yearAndMonths)
         }
         updateCalendar(yearAndMonths: newYearAndMonths)
@@ -297,7 +292,6 @@ public extension SCCalenderRepository {
     }
 
     func moveTodayCalendar() {
-        let df = DateFormatUtility()
         // 今月の年月を取得
         let (year, month) = df.getDateYearAndMonth()
 

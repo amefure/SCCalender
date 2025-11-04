@@ -7,18 +7,18 @@
 import SwiftUI
 
 public struct SCDate: Identifiable, @unchecked Sendable {
-    var id: UUID = .init()
-    var year: Int
-    var month: Int
-    var day: Int
-    var date: Date?
-    var week: SCWeek?
-    var holidayName: String = ""
+    public var id: UUID = .init()
+    public var year: Int
+    public var month: Int
+    public var day: Int
+    public var date: Date?
+    public var week: SCWeek?
+    public var holidayName: String = ""
     /// 日付に持たせたいエンティティ
-    var entities: [SCDateEntity] = []
-    var isToday: Bool = false
+    public var entities: [SCDateEntity] = []
+    public var isToday: Bool = false
 
-    func dayColor(defaultColor: Color = .gray) -> Color {
+    public func dayColor(defaultColor: Color = .gray) -> Color {
         guard let week else { return defaultColor }
         if !holidayName.isEmpty { return .red }
         if week == .saturday {

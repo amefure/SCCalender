@@ -16,7 +16,7 @@ public enum SCWeek: Int, CaseIterable, Sendable {
     case friday = 5
     case saturday = 6
 
-    var fullSymbols: String {
+    public var fullSymbols: String {
         switch self {
         case .sunday: "日曜日"
         case .monday: "月曜日"
@@ -28,7 +28,7 @@ public enum SCWeek: Int, CaseIterable, Sendable {
         }
     }
 
-    var shortSymbols: String {
+    public var shortSymbols: String {
         switch self {
         case .sunday: "日"
         case .monday: "月"
@@ -40,7 +40,7 @@ public enum SCWeek: Int, CaseIterable, Sendable {
         }
     }
 
-    var color: Color? {
+    public var color: Color? {
         switch self {
         case .sunday: .red
         case .saturday: .blue
@@ -48,7 +48,7 @@ public enum SCWeek: Int, CaseIterable, Sendable {
        }
     }
 
-    static let INITAL_LIST: [SCWeek] = [.sunday, .monday, .tuesday, .wednesday, .thursday, .friday, .saturday]
+    public static let INITAL_LIST: [SCWeek] = [.sunday, .monday, .tuesday, .wednesday, .thursday, .friday, .saturday]
 }
 
 public extension [SCWeek] {
