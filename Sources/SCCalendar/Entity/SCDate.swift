@@ -28,7 +28,7 @@ public struct SCDate: Identifiable, @unchecked Sendable {
         week: SCWeek? = nil,
         holidayName: String = "",
         entities: [SCDateEntity] = [],
-        isToday: Bool
+        isToday: Bool = false
     ) {
         self.id = id
         self.year = year
