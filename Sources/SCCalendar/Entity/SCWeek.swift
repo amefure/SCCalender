@@ -7,7 +7,7 @@
 import SwiftUI
 import UIKit
 
-public enum SCWeek: Int, CaseIterable, Sendable {
+public enum SCWeek: Int, CaseIterable, Sendable, Equatable, Hashable {
     case sunday = 0
     case monday = 1
     case tuesday = 2

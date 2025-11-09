@@ -6,7 +6,7 @@
 
 import UIKit
 
-public struct SCYearAndMonth: Identifiable, Sendable {
+public struct SCYearAndMonth: Identifiable, Sendable, Equatable, Hashable {
     public let id: UUID = .init()
     public let year: Int
     public let month: Int

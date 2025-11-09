@@ -5,8 +5,10 @@
 //
 
 import SwiftUI
+import UIKit
 
-public struct SCDate: Identifiable, @unchecked Sendable {
+public struct SCDate: Identifiable, @unchecked Sendable, Equatable, Hashable {
+    
     public var id: UUID = .init()
     public var year: Int
     public var month: Int
@@ -15,7 +17,7 @@ public struct SCDate: Identifiable, @unchecked Sendable {
     public var week: SCWeek?
     public var holidayName: String = ""
     /// 日付に持たせたいエンティティ
-    public var entities: [SCDateEntity] = []
+    public var entities: [any SCDateEntity] = []
     public var isToday: Bool = false
     
     
@@ -27,7 +29,7 @@ public struct SCDate: Identifiable, @unchecked Sendable {
         date: Date? = nil,
         week: SCWeek? = nil,
         holidayName: String = "",
-        entities: [SCDateEntity] = [],
+        entities: [any SCDateEntity] = [],
         isToday: Bool = false
     ) {
         self.id = id
@@ -51,6 +53,24 @@ public struct SCDate: Identifiable, @unchecked Sendable {
         } else {
             return defaultColor
         }
+    }
+    
+    public static func == (lhs: SCDate, rhs: SCDate) -> Bool {
+        lhs.year == rhs.year &&
+        lhs.month == rhs.month &&
+        lhs.day == rhs.day &&
+        lhs.isToday == rhs.isToday &&
+        lhs.holidayName == rhs.holidayName &&
+        lhs.entities.count == rhs.entities.count
+    }
+    
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(year)
+        hasher.combine(month)
+        hasher.combine(day)
+        hasher.combine(isToday)
+        hasher.combine(holidayName)
+        hasher.combine(entities.count) // countだけを利用
     }
 }
 
