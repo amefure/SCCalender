@@ -117,10 +117,10 @@ public extension SCCalenderRepository {
         
         // 中央に指定しているインデックス番号を取得
         let index: Int = yearAndMonths.firstIndex(where: { $0.yearAndMonth == middle.yearAndMonth }) ?? 0
-        updateDisplayCalendarIndex(index: index)
         // カレンダー更新
         updateYearAndMonths(yearAndMonths: yearAndMonths)
-
+        // インデックス更新
+        updateDisplayCalendarIndex(index: index)
     }
     
     /// カレンダー表示年月インデックスを変更
