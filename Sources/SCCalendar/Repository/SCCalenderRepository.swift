@@ -18,8 +18,8 @@ public final class SCCalenderRepository: @unchecked Sendable {
 
     /// 表示対象として保持している年月オブジェクト
     ///  `[2024.2 , 2024.3 , 2024.4]`
-    /// `forwardMonth / backMonth`を実行するたびに追加されていく
-    /// 初期表示時点は
+    ///  直近3ヶ月しか保持しない
+    /// `forwardMonth / backMonth`を実行するたびにずれていく
     public var yearAndMonths: AnyPublisher<[SCYearAndMonth], Never> {
         _yearAndMonths.eraseToAnyPublisher()
     }
@@ -86,30 +86,18 @@ public final class SCCalenderRepository: @unchecked Sendable {
 // MARK: Private
 
 public extension SCCalenderRepository {
-    /// カレンダー初期格納年月を指定して更新（前後rangeヶ月分を含める）
+    /// カレンダー初期格納年月を指定して更新
     /// - Parameters:
     ///   - year: 当日の指定年
     ///   - month: 中央となる指定月
-    ///   - range: 中央を基準に前後に含める月数（例: range = 1なら前後1ヶ月ずつ）
-    private func initialSetUpCalendarData(year: Int, month: Int, range: Int = 5) {
-        let middle = createYearAndMonth(year: year, month: month)
-        var yearAndMonths: [SCYearAndMonth] = []
-
-        let dateComponents = DateComponents(year: middle.year, month: middle.month)
-        // 範囲内の前後SCYearAndMonthを生成して追加
-        for offset in -range ... range {
-            guard let newDate = calendar.date(from: dateComponents),
-                  let targetDate = calendar.date(byAdding: .month, value: offset, to: newDate) else { continue }
-            let components = calendar.dateComponents([.year, .month], from: targetDate)
-            guard let y = components.year,
-                  let m = components.month else { continue }
-            let yearAndMonth = createYearAndMonth(year: y, month: m)
-            yearAndMonths.append(yearAndMonth)
-        }
-
-        // 中央に指定しているインデックス番号を取得
-        let index: Int = yearAndMonths.firstIndex(where: { $0.yearAndMonth == middle.yearAndMonth }) ?? 0
-        _displayCalendarIndex.send(index)
+    private func initialSetUpCalendarData(year: Int, month: Int) {
+        let prev = (month == 1) ? createYearAndMonth(year: year - 1, month: 12)
+                                    : createYearAndMonth(year: year, month: month - 1)
+        let current = createYearAndMonth(year: year, month: month)
+        let next = (month == 12) ? createYearAndMonth(year: year + 1, month: 1)
+                                 : createYearAndMonth(year: year, month: month + 1)
+        let yearAndMonths = [prev, current, next]
+        setDisplayCalendarIndex(index: 1)
         // カレンダー更新
         updateCalendar(yearAndMonths: yearAndMonths)
     }
@@ -209,27 +197,30 @@ public extension SCCalenderRepository {
 
 public extension SCCalenderRepository {
     func forwardMonthPage() {
-        let count: Int = _yearAndMonths.value.count
-        let next = Int(min(CGFloat(_displayCalendarIndex.value + 1), CGFloat(count)))
-        setDisplayCalendarIndex(index: next)
-        // 最大年月まで2になったら翌月を追加する
-        if _displayCalendarIndex.value == count - 2 {
-            _ = addNextMonth()
+        guard !_yearAndMonths.value.isEmpty else { return }
+        // 現在インデックスを進める
+        let next = _displayCalendarIndex.value + 1
+        if next >= _yearAndMonths.value.count {
+           // 最後に到達したら配列を更新
+           _ = addNextMonth()
+        } else {
+           setDisplayCalendarIndex(index: next)
         }
     }
 
     /// 年月ページを1つ戻る
     func backMonthPage() {
-        if _displayCalendarIndex.value == 2 {
-            // 残り年月が2になったら前月を12ヶ月分追加する
-            _ = addPreMonth()
-            // 2のタイミングで12ヶ月分追加するのでインデックスを+10
-            let next = Int(_displayCalendarIndex.value + 10)
-            setDisplayCalendarIndex(index: next)
-        } else {
-            let next = Int(_displayCalendarIndex.value - 1)
-            setDisplayCalendarIndex(index: next)
-        }
+        guard !_yearAndMonths.value.isEmpty else { return }
+
+       // 現在インデックスを戻す
+       let next = _displayCalendarIndex.value - 1
+
+       if next < 0 {
+           // 先頭に到達したら配列を更新
+           _ = addPreMonth()
+       } else {
+           setDisplayCalendarIndex(index: next)
+       }
     }
 
     /// 格納済みの最新月の翌月を1ヶ月分追加する
@@ -237,14 +228,23 @@ public extension SCCalenderRepository {
     private func addNextMonth() -> Bool {
         var yearAndMonths = _yearAndMonths.value
         guard let last = yearAndMonths.last else { return false }
-        if last.month + 1 == 13 {
-            let yearAndMonth = createYearAndMonth(year: last.year + 1, month: 1)
-            yearAndMonths.append(yearAndMonth)
+        
+        // 次の月を作成
+        let next: SCYearAndMonth
+        if last.month == 12 {
+            next = createYearAndMonth(year: last.year + 1, month: 1)
         } else {
-            let yearAndMonth = createYearAndMonth(year: last.year, month: last.month + 1)
-            yearAndMonths.append(yearAndMonth)
+            next = createYearAndMonth(year: last.year, month: last.month + 1)
+        }
+        
+        // 新しい月を末尾に追加して先頭を削除（3ヶ月を維持）
+        yearAndMonths.append(next)
+        if yearAndMonths.count > 3 {
+            yearAndMonths.removeFirst()
         }
         updateCalendar(yearAndMonths: yearAndMonths)
+        // 表示を中央(=1)に戻す
+        setDisplayCalendarIndex(index: 1)
         return true
     }
 
@@ -252,18 +252,25 @@ public extension SCCalenderRepository {
     /// - Returns: 成功フラグ
     private func addPreMonth() -> Bool {
         var yearAndMonths = _yearAndMonths.value
-        // 12ヶ月分一気に追加する
-        for _ in 1 ..< 12 {
-            guard let first = yearAndMonths.first else { return false }
-            if first.month - 1 == 0 {
-                let yearAndMonth = createYearAndMonth(year: first.year - 1, month: 12)
-                yearAndMonths.insert(yearAndMonth, at: 0)
-            } else {
-                let yearAndMonth = createYearAndMonth(year: first.year, month: first.month - 1)
-                yearAndMonths.insert(yearAndMonth, at: 0)
-            }
+        guard let first = yearAndMonths.first else { return false }
+
+        // 前の月を作成
+        let prev: SCYearAndMonth
+        if first.month == 1 {
+            prev = createYearAndMonth(year: first.year - 1, month: 12)
+        } else {
+            prev = createYearAndMonth(year: first.year, month: first.month - 1)
         }
+
+        // 先頭に追加して末尾を削除（3ヶ月を維持）
+        yearAndMonths.insert(prev, at: 0)
+        if yearAndMonths.count > 3 {
+            yearAndMonths.removeLast()
+        }
+
         updateCalendar(yearAndMonths: yearAndMonths)
+        // 表示を中央(=1)に戻す
+        setDisplayCalendarIndex(index: 1)
         return true
     }
 
