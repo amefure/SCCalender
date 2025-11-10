@@ -51,15 +51,15 @@ public final class SCCalenderRepository: @unchecked Sendable {
     
     private let df = DateFormatUtility()
     
-    /// データと日付の連携の際に比較する`Calendar.Component`
+    /// データと日付の連携の際に比較する`Calendar.Component`フラグ
     /// `isMatchDataDayYear`で年を含めない場合は年ごとにデータが繰り返される
-    private let matchDataDay: Set<Calendar.Component>
+    private let isMatchDataDayYear: Bool
 
     public init(
         isMatchDataDayYear: Bool = true
     ) {
         today = calendar.dateComponents([.year, .month, .day], from: Date())
-        self.matchDataDay = isMatchDataDayYear ? [.year, .month, .day]: [.month, .day]
+        self.isMatchDataDayYear = isMatchDataDayYear
     }
 
     /// 初期表示用に当月の年月だけセットして流す
@@ -170,8 +170,12 @@ public extension SCCalenderRepository {
             let isToday: Bool = df.checkInSameDayAs(date: date, sameDay: Date())
             // 対象の日付に紐づくエンティティ情報だけを格納する
             let entities: [SCDateEntity] = allEntities.filter {
-                let components = calendar.dateComponents(matchDataDay, from: $0.date)
-                return day == components.day && month == components.month
+                let components = calendar.dateComponents(isMatchDataDayYear ? [.year, .month, .day]: [.month, .day], from: $0.date)
+                if isMatchDataDayYear {
+                    return day == components.day && month == components.month && year == components.year
+                } else {
+                    return day == components.day && month == components.month
+                }
             }
             let scDate = SCDate(
                 year: year,
