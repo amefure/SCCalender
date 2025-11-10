@@ -91,7 +91,7 @@ public extension SCCalenderRepository {
     ///   - year: 当日の指定年
     ///   - month: 中央となる指定月
     ///   - range: 中央を基準に前後に含める月数（例: range = 1なら前後1ヶ月ずつ）
-    private func initialSetUpCalendarData(year: Int, month: Int, range: Int = 5) {
+    private func initialSetUpCalendarData(year: Int, month: Int, range: Int = 2) {
         let middle = createYearAndMonth(year: year, month: month)
 
         var yearAndMonths: [SCYearAndMonth] = []
@@ -110,21 +110,24 @@ public extension SCCalenderRepository {
         
         // 中央に指定しているインデックス番号を取得
         let index: Int = yearAndMonths.firstIndex(where: { $0.yearAndMonth == middle.yearAndMonth }) ?? 0
-        _displayCalendarIndex.send(index)
-        setDisplayCalendarIndex(index: index)
+        updateDisplayCalendarIndex(index: index)
         // カレンダー更新
-        updateCalendar(yearAndMonths: yearAndMonths)
+        updateYearAndMonths(yearAndMonths: yearAndMonths)
 
+    }
+    
+    /// カレンダー表示年月インデックスを変更
+    private func updateDisplayCalendarIndex(index: Int) {
+        _displayCalendarIndex.send(index)
+    }
+    
+    /// `yearAndMonths`を更新
+    private func updateYearAndMonths(yearAndMonths: [SCYearAndMonth]) {
+        _yearAndMonths.send(yearAndMonths)
     }
 }
 
 public extension SCCalenderRepository {
-    /// カレンダーUIを更新
-    /// `currentYearAndMonth`を元に日付情報を取得して配列に格納
-    private func updateCalendar(yearAndMonths: [SCYearAndMonth]) {
-        _yearAndMonths.send(yearAndMonths)
-    }
-
     /// 1ヶ月単位の`SCYearAndMonth`インスタンスを作成
     func createYearAndMonth(
         year: Int,
@@ -220,7 +223,7 @@ public extension SCCalenderRepository {
            
            _ = addNextMonth()
         } else {
-           setDisplayCalendarIndex(index: next)
+            updateDisplayCalendarIndex(index: next)
         }
     }
 
@@ -235,7 +238,7 @@ public extension SCCalenderRepository {
            // 先頭に到達したら配列を更新
            _ = addPreMonth()
        } else {
-           setDisplayCalendarIndex(index: next)
+           updateDisplayCalendarIndex(index: next)
        }
     }
 
@@ -258,9 +261,8 @@ public extension SCCalenderRepository {
         if yearAndMonths.count > 5 {
             yearAndMonths.removeFirst()
         }
-        updateCalendar(yearAndMonths: yearAndMonths)
-        // 表示を中央(=1)に戻す
-        setDisplayCalendarIndex(index: 1)
+        // 年月更新
+        updateYearAndMonths(yearAndMonths: yearAndMonths)
         return true
     }
 
@@ -283,10 +285,7 @@ public extension SCCalenderRepository {
         if yearAndMonths.count > 5 {
             yearAndMonths.removeLast()
         }
-
-        updateCalendar(yearAndMonths: yearAndMonths)
-        // 表示を中央(=1)に戻す
-        setDisplayCalendarIndex(index: 1)
+        updateYearAndMonths(yearAndMonths: yearAndMonths)
         return true
     }
 
@@ -305,13 +304,8 @@ public extension SCCalenderRepository {
             let yearAndMonths: SCYearAndMonth = createYearAndMonth(year: yearAndMonth.year, month: yearAndMonth.month)
             newYearAndMonths.append(yearAndMonths)
         }
-        updateCalendar(yearAndMonths: newYearAndMonths)
+        updateYearAndMonths(yearAndMonths: newYearAndMonths)
         return list
-    }
-
-    /// カレンダー表示年月インデックスを変更
-    private func setDisplayCalendarIndex(index: Int) {
-        _displayCalendarIndex.send(index)
     }
 
     func moveTodayCalendar() {
@@ -331,7 +325,7 @@ public extension SCCalenderRepository {
         } else {
             // 今月が含まれているならそのインデックスに移動
             if let todayIndex = _yearAndMonths.value.firstIndex(where: { $0.year == year && $0.month == month }) {
-                setDisplayCalendarIndex(index: todayIndex)
+                updateDisplayCalendarIndex(index: todayIndex)
             }
         }
     }
